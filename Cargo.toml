@@ -1,0 +1,24 @@
+[package]
+name = "abstract_socket"
+version = "0.1.0"
+authors = ["Martin Habovstiak <martin.habovstiak@gmail.com>"]
+edition = "2021"
+rust-version = "1.70.0"
+description = "Types to abstract over TCP and Unix socket."
+readme = "README.md"
+repository = "https://github.com/Kixunil/abstract_socket"
+license = "MITNFA"
+keywords = ["socket", "tcp", "unix", "abstraction"]
+categories = ["network-programming", "rust-patterns", "os::unix-apis"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+async-io = { version = "2.0.0", default-features = false, optional = true }
+futures-lite = { version = "2.6.1", default-features = false, optional = true, features = ["std"] }
+libc = "0.2.95"
+
+[features]
+async-io = ["dep:async-io", "dep:futures-lite"]
