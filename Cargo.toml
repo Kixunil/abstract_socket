@@ -19,6 +19,10 @@ rustdoc-args = ["--cfg", "docsrs"]
 async-io = { version = "2.0.0", default-features = false, optional = true }
 futures-lite = { version = "2.6.1", default-features = false, optional = true, features = ["std"] }
 libc = "0.2.95"
+parse_arg = { version = "1.0.1", optional = true }
+serde = { version = "1.0.220", package = "serde_core", optional = true, default-features = false, features = ["std"] }
 
 [features]
 async-io = ["dep:async-io", "dep:futures-lite"]
+parse_arg = ["dep:parse_arg"]
+serde = ["dep:serde"]

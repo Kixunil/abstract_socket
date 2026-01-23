@@ -19,7 +19,13 @@
 //!
 //! ## Feature flags:
 //! 
-//! `async-io` - uses the `async-io` crate to provide an `async-std`-compatible wrapper. Note that this wasn't tested in practice because I mistakenly thought I need this but I dicovered that I don't just before testing it, so I just kept it in.
+//! * `async-io` - uses the `async-io` crate to provide an `async-std`-compatible wrapper. Note that
+//!   this wasn't tested in practice because I mistakenly thought I need this but I dicovered that I
+//!   don't just before testing it, so I just kept it in.
+//! * `parse_arg` - adds `parse_arg::ParseArg` impl for `SocketAddr` to make getting it from command
+//!   line arguments easier.
+//! * `serde` - adds `Deserialize` impl for `SocketAddr` so that it can be easily retrieved from a
+//!   configuration file
 //!
 //! ## MSRV
 //!
@@ -972,6 +978,35 @@ impl ToSocketAddrs for std::net::SocketAddr {
 
     fn to_socket_addrs(&self) -> io::Result<Self::Iter<'_>> {
         Ok(std::iter::once((*self).into()))
+    }
+}
+
+#[cfg(feature = "parse_arg")]
+impl parse_arg::ParseArgFromStr for SocketAddr {
+    fn describe_type<W: fmt::Write>(mut writer: W) -> fmt::Result {
+        std::net::SocketAddr::describe_type(&mut writer)?;
+        write!(writer, " or an absolute Unix path or a relative Unix path starting with `./` or `unix:` followed by a Unix path")
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for SocketAddr {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Visitor;
+
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = SocketAddr;
+
+            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(f, "a version 4 or 6 network socket address (IP:port) or an absolute Unix path or a relative Unix path starting with `./` or `unix:` followed by a Unix path")
+            }
+
+            fn visit_str<E: serde::de::Error>(self, s: &str) -> Result<Self::Value, E> {
+                s.parse().map_err(|_| E::invalid_value(serde::de::Unexpected::Str(s), &"a version 4 or 6 network socket address (IP:port) or an absolute Unix path or a relative Unix path starting with `./` or `unix:` followed by a Unix path"))
+            }
+        }
+
+        deserializer.deserialize_str(Visitor)
     }
 }
 
