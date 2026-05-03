@@ -681,6 +681,18 @@ impl From<std::net::SocketAddr> for SocketAddr {
     }
 }
 
+impl From<std::net::SocketAddrV4> for SocketAddr {
+    fn from(value: std::net::SocketAddrV4) -> Self {
+        SocketAddr::Net(value.into())
+    }
+}
+
+impl From<std::net::SocketAddrV6> for SocketAddr {
+    fn from(value: std::net::SocketAddrV6) -> Self {
+        SocketAddr::Net(value.into())
+    }
+}
+
 impl From<([u8; 4], u16)> for SocketAddr {
     fn from(value: ([u8; 4], u16)) -> Self {
         SocketAddr::Net(value.into())
