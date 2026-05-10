@@ -590,8 +590,9 @@ impl SocketAddr {
         let mut addr = MaybeUninit::<CAddr>::uninit();
         let mut addr_len = ADDR_LEN;
         let result = f(&mut addr, &mut addr_len)?;
-        // we trust the OS to provide reasonable length but keep this in for debugging
-        debug_assert!(addr_len >= std::mem::size_of::<libc::sa_family_t>() as libc::socklen_t);
+        if addr_len < std::mem::size_of::<libc::sa_family_t>() as libc::socklen_t {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid address length"));
+        }
         // To avoid a ton of unsafe-marked code we do most of the stuff in the safe functions.
         let addr = unsafe {
             let addr = addr.assume_init();
