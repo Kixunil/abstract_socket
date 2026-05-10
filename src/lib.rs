@@ -139,7 +139,7 @@ macro_rules! ck_syscall {
         // classic trick to prevent double evaluation without affecting lifetimes
         match $val {
             // no partial range syntax :(
-            invalid if invalid < -1 => return Err(io::Error::last_os_error()),
+            invalid if invalid < 0 => return Err(io::Error::last_os_error()),
             valid => valid,
         }
     }
@@ -388,10 +388,9 @@ impl Listener {
         )))]
         unsafe {
             let fd = ck_syscall!(libc::accept(self.fd.as_raw_fd(), ptr, len));
-            let fd = OwnedFd::from_raw_fd(fd);
-            let flags = ck_syscall!(libc::fcntl(self.fd.as_raw_fd(), libc::F_GETFD));
-            ck_syscall!(libc::fcntl(self.fd.as_raw_fd(), libc::F_SETFD, flags | libc::FD_CLOEXEC));
-            Ok(Stream { fd })
+            let flags = ck_syscall!(libc::fcntl(fd, libc::F_GETFD));
+            ck_syscall!(libc::fcntl(fd, libc::F_SETFD, flags | libc::FD_CLOEXEC));
+            Ok(Stream { fd: OwnedFd::from_raw_fd(fd) })
         }
     }
 
@@ -591,8 +590,9 @@ impl SocketAddr {
         let mut addr = MaybeUninit::<CAddr>::uninit();
         let mut addr_len = ADDR_LEN;
         let result = f(&mut addr, &mut addr_len)?;
-        // we trust the OS to provide reasonable length but keep this in for debugging
-        debug_assert!(addr_len >= std::mem::size_of::<libc::sa_family_t>() as libc::socklen_t);
+        if addr_len < std::mem::size_of::<libc::sa_family_t>() as libc::socklen_t {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid address length"));
+        }
         // To avoid a ton of unsafe-marked code we do most of the stuff in the safe functions.
         let addr = unsafe {
             let addr = addr.assume_init();
