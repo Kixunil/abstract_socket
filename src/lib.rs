@@ -388,10 +388,9 @@ impl Listener {
         )))]
         unsafe {
             let fd = ck_syscall!(libc::accept(self.fd.as_raw_fd(), ptr, len));
-            let fd = OwnedFd::from_raw_fd(fd);
-            let flags = ck_syscall!(libc::fcntl(self.fd.as_raw_fd(), libc::F_GETFD));
-            ck_syscall!(libc::fcntl(self.fd.as_raw_fd(), libc::F_SETFD, flags | libc::FD_CLOEXEC));
-            Ok(Stream { fd })
+            let flags = ck_syscall!(libc::fcntl(fd, libc::F_GETFD));
+            ck_syscall!(libc::fcntl(fd, libc::F_SETFD, flags | libc::FD_CLOEXEC));
+            Ok(Stream { fd: OwnedFd::from_raw_fd(fd) })
         }
     }
 
