@@ -139,7 +139,7 @@ macro_rules! ck_syscall {
         // classic trick to prevent double evaluation without affecting lifetimes
         match $val {
             // no partial range syntax :(
-            invalid if invalid < -1 => return Err(io::Error::last_os_error()),
+            invalid if invalid < 0 => return Err(io::Error::last_os_error()),
             valid => valid,
         }
     }
