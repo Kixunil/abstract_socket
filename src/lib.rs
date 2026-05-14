@@ -592,11 +592,11 @@ impl SocketAddr {
         let mut addr_len = ADDR_LEN;
         let result = f(&mut addr, &mut addr_len)?;
         // we trust the OS to provide reasonable length but keep this in for debugging
-        debug_assert!(addr_len >= std::mem::size_of::<libc::sa_family_t>() as libc::socklen_t);
+        debug_assert!(addr_len >= std::mem::size_of::<libc::sockaddr>() as libc::socklen_t);
         // To avoid a ton of unsafe-marked code we do most of the stuff in the safe functions.
         let addr = unsafe {
             let addr = addr.assume_init();
-            match i32::from(addr.family) {
+            match i32::from(addr.sa.sa_family) {
                 libc::AF_INET => SocketAddr::from(convert_af_inet(addr.inet)),
                 libc::AF_INET6 => SocketAddr::from(convert_af_inet6(addr.inet6)),
                 libc::AF_UNIX => SocketAddr::try_from(convert_af_unix(addr.unix)).expect("OS should return a valid path"),
@@ -626,7 +626,7 @@ impl fmt::Display for SocketAddr {
 #[repr(C)]
 union CAddr {
     // We can access this first to check which variant it is
-    family: libc::sa_family_t,
+    sa: libc::sockaddr,
     inet: libc::sockaddr_in,
     inet6: libc::sockaddr_in6,
     unix: libc::sockaddr_un,
