@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build (default features)
+        run: cargo build
+      - name: Build (all features)
+        run: cargo build --all-features
+      - name: Test (default features)
+        run: cargo test
+      - name: Test (all features)
+        run: cargo test --all-features
+
+  msrv:
+    name: MSRV (Rust ${{ matrix.rust }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust: ["1.70.0"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      # MSRV applies to the base crate. Optional feature deps (async-io, polling)
+      # have their own, higher MSRVs upstream, so --all-features is not part of
+      # the MSRV contract.
+      - name: Build (default features)
+        run: cargo build
